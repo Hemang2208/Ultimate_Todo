@@ -1,103 +1,109 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useRef, useLayoutEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Check, Shield, Zap } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import gsap from "gsap";
+
+const LandingPage = () => {
+  const router = useRouter();
+  const containerRef = useRef(null);
+
+  useLayoutEffect(() => {
+    gsap.fromTo(
+      containerRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+    );
+  }, []);
+
+  const handleLogin = () => {
+    toast.info("Redirecting to login page...");
+    setTimeout(() => router.push("/user/login"), 1000);
+  };
+
+  const handleRegister = () => {
+    toast.success("Redirecting to registration page...");
+    setTimeout(() => router.push("/user/register"), 1000);
+  };
+
+  const features = [
+    {
+      icon: <Check size={28} className="text-blue-300 mb-3" />,
+      title: "Easy to Use",
+      description:
+        "Simple and intuitive interface for managing your daily tasks.",
+    },
+    {
+      icon: <Shield size={28} className="text-blue-300 mb-3" />,
+      title: "Secure",
+      description: "Your data is protected with industry-standard encryption.",
+    },
+    {
+      icon: <Zap size={28} className="text-blue-300 mb-3" />,
+      title: "Powerful",
+      description: "Advanced features to supercharge your productivity.",
+    },
+  ];
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 flex items-center justify-center px-4 py-12">
+      <ToastContainer position="top-right" autoClose={3000} />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div ref={containerRef} className="text-center max-w-6xl w-full">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+          Ultimate <span className="text-yellow-300">Todo</span> List
+        </h1>
+
+        <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
+          Organize your tasks efficiently and boost your productivity with our
+          powerful todo list application.
+        </p>
+
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+          <button
+            onClick={handleLogin}
+            className="px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 bg-white text-blue-900 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-white"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Get Started - Login
+          </button>
+          <button
+            onClick={handleRegister}
+            className="px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 border-2 border-white text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white"
           >
-            Read our docs
-          </a>
+            Create Account
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="flex flex-wrap items-center justify-center gap-6 text-white max-w-5xl mx-auto">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="w-full sm:w-[300px] p-6 flex flex-col rounded-xl bg-white/10 backdrop-blur-sm transition-all duration-300  hover:scale-105 hover:bg-white/15"
+            >
+              <div className="flex flex-col items-center text-center gap-3 mb-4">
+                <div className="text-blue-300">{feature.icon}</div>
+                <h3 className="text-xl font-semibold text-white">
+                  {feature.title}
+                </h3>
+              </div>
+              <p className="text-white/80 text-center">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-16 text-white/70 text-sm">
+          <p className="mb-2">Join thousands of productive users today</p>
+          <p>
+            &copy; {new Date().getFullYear()} Ultimate Todo List. All rights
+            reserved.
+          </p>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default LandingPage;
