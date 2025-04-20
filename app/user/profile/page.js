@@ -3,7 +3,7 @@
 import axios from "axios";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   Edit,
@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   LogOut,
 } from "lucide-react";
+import ToastProvider from "@/app/components/ToastProvider";
 
 const Profile = () => {
   // Theme state initialization
@@ -388,18 +389,7 @@ const Profile = () => {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-8 px-4 transition-colors duration-300">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={theme}
-      />
+      <ToastProvider />
 
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-colors duration-300">
         {/* Header */}

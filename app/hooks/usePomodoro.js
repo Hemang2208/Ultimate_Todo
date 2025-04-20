@@ -1,179 +1,199 @@
-import { useState, useRef, useEffect } from 'react';
+"use client"
 
-export const TIMER_MODES = {
-  WORK: 'work',
-  SHORT_BREAK: 'shortBreak',
-  LONG_BREAK: 'longBreak'
-};
+import { useState, useRef, useEffect, useCallback } from "react"
+import { saveToLocalStorage, getFromLocalStorage } from "../utils/dualStorage"
 
-export const DEFAULT_TIMES = {
-  [TIMER_MODES.WORK]: 25 * 60,
-  [TIMER_MODES.SHORT_BREAK]: 5 * 60,
-  [TIMER_MODES.LONG_BREAK]: 15 * 60
-};
+export default function usePomodoro() {
+  // Try to get pomodoro state from localStorage
+  const getInitialState = () => {
+    const savedState = getFromLocalStorage("pomodoroState")
+    if (savedState) {
+      // If there's a saved state but the timer was running, reset it
+      if (savedState.timerRunning) {
+        return {
+          ...savedState,
+          timerRunning: false,
+        }
+      }
+      return savedState
+    }
 
-export const usePomodoro = () => {
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_TIMES[TIMER_MODES.WORK]);
-  const [mode, setMode] = useState(TIMER_MODES.WORK);
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentTask, setCurrentTask] = useState(null);
-  const [sessionCount, setSessionCount] = useState(1);
-  const [totalSessions, setTotalSessions] = useState(0);
-  const intervalRef = useRef(null);
-
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    // Default state
     return {
-      hours,
-      minutes,
-      seconds: secs,
-      display: `${hours > 0 ? hours.toString().padStart(2, '0') + ':' : ''}${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    };
-  };
-
-  const setCustomTime = (hours, minutes, seconds) => {
-    const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-    setTimeLeft(totalSeconds);
-  };
-
-  const handleSessionComplete = () => {
-    if (mode === TIMER_MODES.WORK) {
-      setTotalSessions(prev => prev + 1);
-      if (sessionCount === 4) {
-        setSessionCount(1);
-        switchMode(TIMER_MODES.LONG_BREAK);
-      } else {
-        setSessionCount(prev => prev + 1);
-        switchMode(TIMER_MODES.SHORT_BREAK);
-      }
-    } else {
-      switchMode(TIMER_MODES.WORK);
+      timeLeft: 25 * 60, // 25 minutes in seconds
+      timerMode: "work", // 'work', 'shortBreak', 'longBreak'
+      timerActive: false,
+      timerRunning: false,
+      currentTask: null,
     }
-  };
+  }
 
-  const start = () => {
-    if (!isRunning && timeLeft > 0) {
-      setIsRunning(true);
-      const startTime = performance.now();
-      let lastUpdateTime = startTime;
-      let accumulatedTime = 0;
+  const initialState = getInitialState()
 
-      const tick = (currentTime) => {
-        if (!intervalRef.current || !isRunning) {
-          cancelAnimationFrame(intervalRef.current);
-          intervalRef.current = null;
-          return;
-        }
+  const [timeLeft, setTimeLeft] = useState(initialState.timeLeft)
+  const [timerMode, setTimerMode] = useState(initialState.timerMode)
+  const [timerActive, setTimerActive] = useState(initialState.timerActive)
+  const [timerRunning, setTimerRunning] = useState(initialState.timerRunning)
+  const [currentTask, setCurrentTask] = useState(initialState.currentTask)
+  const timerRef = useRef(null)
 
-        const deltaTime = currentTime - lastUpdateTime;
-        accumulatedTime += deltaTime;
+  // Clear any existing interval
+  const clearTimerInterval = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
 
-        if (accumulatedTime >= 1000) {
-          const decrementAmount = Math.floor(accumulatedTime / 1000);
-          accumulatedTime = accumulatedTime % 1000;
+  // Save state to localStorage
+  const saveState = useCallback(() => {
+    saveToLocalStorage("pomodoroState", {
+      timeLeft,
+      timerMode,
+      timerActive,
+      timerRunning,
+      currentTask,
+    })
+  }, [timeLeft, timerMode, timerActive, timerRunning, currentTask])
 
-          setTimeLeft((prev) => {
-            const newTime = Math.max(0, prev - decrementAmount);
-            if (newTime === 0) {
-              cancelAnimationFrame(intervalRef.current);
-              intervalRef.current = null;
-              setIsRunning(false);
-              playNotification();
-              handleSessionComplete();
-              return 0;
+  // Start the timer
+  const startTimer = useCallback(
+    (task = null) => {
+      if (task) {
+        setCurrentTask(task)
+      }
+
+      setTimerActive(true)
+      setTimerRunning(true)
+
+      // Clear any existing interval first
+      clearTimerInterval()
+
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            // Play notification sound
+            try {
+              const audio = new Audio("/notification.mp3")
+              audio.play().catch((e) => console.log("Audio play error:", e))
+            } catch (e) {
+              console.log("Audio error:", e)
             }
-            return newTime;
-          });
-        }
 
-        lastUpdateTime = currentTime;
-        intervalRef.current = requestAnimationFrame(tick);
-      };
+            // Show browser notification
+            if (Notification && Notification.permission === "granted") {
+              try {
+                new Notification("Pomodoro Timer", {
+                  body:
+                    timerMode === "work"
+                      ? "Work session completed! Take a break."
+                      : "Break time is over! Back to work.",
+                  icon: "/favicon.ico",
+                })
+              } catch (e) {
+                console.log("Notification error:", e)
+              }
+            }
 
-      intervalRef.current = requestAnimationFrame(tick);
+            // Clear the current interval
+            clearTimerInterval()
+
+            setTimerRunning(false)
+
+            // Auto switch to next mode
+            if (timerMode === "work") {
+              setTimerMode("shortBreak")
+              return 5 * 60 // 5 minute break
+            } else {
+              setTimerMode("work")
+              return 25 * 60 // 25 minute work session
+            }
+          }
+          return prev - 1
+        })
+      }, 1000)
+    },
+    [timerMode, clearTimerInterval],
+  )
+
+  // Pause the timer
+  const pauseTimer = useCallback(() => {
+    clearTimerInterval()
+    setTimerRunning(false)
+  }, [clearTimerInterval])
+
+  // Reset the timer
+  const resetTimer = useCallback(() => {
+    clearTimerInterval()
+    setTimerRunning(false)
+
+    if (timerMode === "work") {
+      setTimeLeft(25 * 60)
+    } else if (timerMode === "shortBreak") {
+      setTimeLeft(5 * 60)
+    } else {
+      setTimeLeft(15 * 60)
     }
-  };
+  }, [timerMode, clearTimerInterval])
 
-  const pause = () => {
-    if (intervalRef.current) {
-      cancelAnimationFrame(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsRunning(false);
-  };
+  // Switch timer mode
+  const switchTimerMode = useCallback(
+    (mode) => {
+      clearTimerInterval()
+      setTimerRunning(false)
+      setTimerMode(mode)
 
-  const reset = () => {
-    if (intervalRef.current) {
-      cancelAnimationFrame(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsRunning(false);
-    setTimeLeft(DEFAULT_TIMES[mode]);
-  };
-
-  const switchMode = (newMode) => {
-    if (isRunning && intervalRef.current) {
-      cancelAnimationFrame(intervalRef.current);
-      intervalRef.current = null;
-      setIsRunning(false);
-    }
-    setMode(newMode);
-    setTimeLeft(DEFAULT_TIMES[newMode]);
-  };
-
-  const playNotification = () => {
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play();
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(mode === TIMER_MODES.WORK ? 'Break Time!' : 'Work Time!', {
-          body: mode === TIMER_MODES.WORK ? 'Time to take a break!' : 'Break is over, back to work!'
-        });
+      if (mode === "work") {
+        setTimeLeft(25 * 60)
+      } else if (mode === "shortBreak") {
+        setTimeLeft(5 * 60)
+      } else if (mode === "longBreak") {
+        setTimeLeft(15 * 60)
       }
-    } catch (error) {
-      console.error('Notification failed:', error);
-    }
-  };
+    },
+    [clearTimerInterval],
+  )
 
+  // Format time as MM:SS
+  const formatTime = useCallback((seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }, [])
+
+  // Save state when it changes
   useEffect(() => {
+    saveState()
+  }, [timeLeft, timerMode, timerActive, timerRunning, currentTask, saveState])
+
+  // Clean up on unmount
+  useEffect(() => {
+    // Request notification permission
+    if (
+      typeof window !== "undefined" &&
+      Notification &&
+      Notification.permission !== "granted" &&
+      Notification.permission !== "denied"
+    ) {
+      Notification.requestPermission()
+    }
+
     return () => {
-      if (intervalRef.current) {
-        cancelAnimationFrame(intervalRef.current);
-        intervalRef.current = null;
-        setIsRunning(false);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isRunning && intervalRef.current) {
-      cancelAnimationFrame(intervalRef.current);
-      intervalRef.current = null;
+      clearTimerInterval()
     }
-  }, [isRunning]);
-
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission !== 'denied') {
-      Notification.requestPermission();
-    }
-  }, []);
+  }, [clearTimerInterval])
 
   return {
     timeLeft,
-    mode,
-    isRunning,
+    timerMode,
+    timerActive,
+    timerRunning,
     currentTask,
-    sessionCount,
-    totalSessions,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    switchTimerMode,
     formatTime,
-    setCustomTime,
-    start,
-    pause,
-    reset,
-    switchMode,
-    setCurrentTask
-  };
-};
+    setTimerActive,
+  }
+}

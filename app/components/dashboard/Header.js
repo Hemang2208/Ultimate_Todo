@@ -1,54 +1,20 @@
 "use client"
+import { Search, Moon, Sun, User, LogOut, Menu, X } from "lucide-react"
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { Search, Sun, Moon, Plus, Menu, X, User, LogOut } from "lucide-react";
-import gsap from "gsap";
-
-const Navbar = () => {
-  // State declarations
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(true);
-  const navbarRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // Toggle functions
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
-
-  // GSAP animations
-  useEffect(() => {
-    if (navbarRef.current) {
-      gsap.from(navbarRef.current, {
-        opacity: 0,
-        y: -20,
-        duration: 0.5,
-        ease: "power2.out",
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (mobileMenuRef.current) {
-      if (isMobileMenuOpen) {
-        gsap.from(mobileMenuRef.current, {
-          opacity: 0,
-          y: -20,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
-    }
-  }, [isMobileMenuOpen]);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
-
+const Header = ({
+  isDarkMode,
+  toggleDarkMode,
+  searchQuery,
+  setSearchQuery,
+  isMobileMenuOpen,
+  toggleMobileMenu,
+  navbarRef,
+  mobileMenuRef,
+  router,
+  setIsMobileMenuOpen,
+  logout,
+  user,
+}) => {
   return (
     <header
       ref={navbarRef}
@@ -61,7 +27,7 @@ const Navbar = () => {
         <div className="hidden md:flex justify-between items-center">
           <div className="flex items-center">
             <h1
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
               className={`text-2xl font-bold ${
                 isDarkMode ? "text-white" : "text-violet-700"
               } cursor-pointer transition-colors duration-300 hover:text-violet-500`}
@@ -106,34 +72,19 @@ const Navbar = () => {
             <button
               onClick={() => router.push("/user/profile")}
               className={`px-4 cursor-pointer py-2 rounded-lg flex items-center transition-colors duration-300 ${
-                isDarkMode
-                  ? "bg-violet-800 hover:bg-violet-700"
-                  : "bg-violet-600 hover:bg-violet-700"
+                isDarkMode ? "bg-violet-800 hover:bg-violet-700" : "bg-violet-600 hover:bg-violet-700"
               } text-white`}
             >
-              <User size={18} className="mr-1" /> Profile
+              <User size={18} className="mr-1" /> {user?.name || "Profile"}
             </button>
 
             <button
-              onClick={() => router.push("/user/logout")}
+              onClick={logout}
               className={`px-4 cursor-pointer py-2 rounded-lg flex items-center transition-colors duration-300 ${
-                isDarkMode
-                  ? "bg-violet-800 hover:bg-violet-700"
-                  : "bg-violet-600 hover:bg-violet-700"
+                isDarkMode ? "bg-violet-800 hover:bg-violet-700" : "bg-violet-600 hover:bg-violet-700"
               } text-white`}
             >
               <LogOut size={18} className="mr-1" /> Logout
-            </button>
-
-            <button
-              onClick={() => router.push("/tasks/new")}
-              className={`px-4 cursor-pointer py-2 rounded-lg flex items-center transition-colors duration-300 ${
-                isDarkMode
-                  ? "bg-violet-800 hover:bg-violet-700"
-                  : "bg-violet-600 hover:bg-violet-700"
-              } text-white`}
-            >
-              <Plus size={18} className="mr-1" /> Add Task
             </button>
           </div>
         </div>
@@ -142,18 +93,14 @@ const Navbar = () => {
         <div className="md:hidden">
           <div className="flex justify-between items-center">
             <h1
-              onClick={() => router.push("/")}
-              className={`text-xl font-bold ${
-                isDarkMode ? "text-white" : "text-violet-700"
-              } cursor-pointer`}
+              onClick={() => router.push("/dashboard")}
+              className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-violet-700"} cursor-pointer`}
             >
               Ultimate Todo
             </h1>
             <button
               onClick={toggleMobileMenu}
-              className={`p-2 rounded-lg ${
-                isDarkMode ? "text-white" : "text-gray-700"
-              }`}
+              className={`p-2 rounded-lg ${isDarkMode ? "text-white" : "text-gray-700"}`}
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
@@ -168,9 +115,7 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div
               ref={mobileMenuRef}
-              className={`mt-4 py-4 px-4 rounded-lg ${
-                isDarkMode ? "bg-gray-800" : "bg-gray-50"
-              } shadow-lg`}
+              className={`mt-4 py-4 px-4 rounded-lg ${isDarkMode ? "bg-gray-800" : "bg-gray-50"} shadow-lg`}
             >
               <div className="space-y-3">
                 <div className="relative">
@@ -194,25 +139,9 @@ const Navbar = () => {
                 </div>
 
                 <button
-                  onClick={() => {
-                    router.push("/tasks/new");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                    isDarkMode
-                      ? "bg-violet-800 hover:bg-violet-700"
-                      : "bg-violet-600 hover:bg-violet-700"
-                  } text-white`}
-                >
-                  <Plus size={18} className="mr-2" /> Add Task
-                </button>
-
-                <button
                   onClick={toggleDarkMode}
                   className={`w-full px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                    isDarkMode
-                      ? "bg-gray-700 hover:bg-gray-600"
-                      : "bg-gray-200 hover:bg-gray-300"
+                    isDarkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"
                   }`}
                 >
                   {isDarkMode ? (
@@ -228,13 +157,11 @@ const Navbar = () => {
 
                 <button
                   onClick={() => {
-                    router.push("/user/profile");
-                    setIsMobileMenuOpen(false);
+                    router.push("/user/profile")
+                    setIsMobileMenuOpen(false)
                   }}
                   className={`w-full px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                    isDarkMode
-                      ? "bg-violet-800 hover:bg-violet-700"
-                      : "bg-violet-600 hover:bg-violet-700"
+                    isDarkMode ? "bg-violet-800 hover:bg-violet-700" : "bg-violet-600 hover:bg-violet-700"
                   } text-white`}
                 >
                   <User size={18} className="mr-2" /> Profile
@@ -242,13 +169,11 @@ const Navbar = () => {
 
                 <button
                   onClick={() => {
-                    router.push("/user/logout");
-                    setIsMobileMenuOpen(false);
+                    logout()
+                    setIsMobileMenuOpen(false)
                   }}
                   className={`w-full px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                    isDarkMode
-                      ? "bg-violet-800 hover:bg-violet-700"
-                      : "bg-violet-600 hover:bg-violet-700"
+                    isDarkMode ? "bg-violet-800 hover:bg-violet-700" : "bg-violet-600 hover:bg-violet-700"
                   } text-white`}
                 >
                   <LogOut size={18} className="mr-2" /> Logout
@@ -259,7 +184,7 @@ const Navbar = () => {
         </div>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Header

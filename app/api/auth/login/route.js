@@ -27,8 +27,16 @@ export const POST = async (req) => {
 
     // Find user in database
     const user = await User.findOne({ email });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Invalid Email or Password." },
+        { status: 401 }
+      );
+    }
+
+    // Check if password matches
     const checkPass = await bcrypt.compare(password, user.password);
-    if (!user || !checkPass) {
+    if (!checkPass) {
       return NextResponse.json(
         { error: "Invalid Email or Password." },
         { status: 401 }
@@ -36,7 +44,8 @@ export const POST = async (req) => {
     }
 
     // Generate JWT Token
-    if (!process.env.JWT_SECRET) {
+    let jw = process.env.JWT_SECRET;
+    if (!jw) {
       return NextResponse.json(
         { error: "Server error. Please try again later." },
         { status: 500 }
@@ -60,7 +69,7 @@ export const POST = async (req) => {
     // Return token for localStorage (Frontend Use)
     return NextResponse.json(
       { message: "Login Successful!", token, user },
-      { status: 200 }
+      { status: 201 }
     );
   } catch (error) {
     console.error("🚨 Login Error:", error.message || error);

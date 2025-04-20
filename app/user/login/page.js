@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import gsap from "gsap";
 import {
   Mail,
@@ -13,6 +14,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import ToastProvider from "@/app/components/ToastProvider";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -73,7 +75,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationError = validateForm();
+    const validationError = await validateForm();
     if (validationError) {
       toast.error(validationError, {
         icon: <XCircle className="text-red-500" />,
@@ -82,9 +84,9 @@ const Login = () => {
     }
 
     setIsLoading(true);
-    toast.info("Authenticating...", {
-      icon: <Loader2 className="animate-spin" />,
-      autoClose: false,
+
+    const loadingToastId = toast.loading("Authenticating...", {
+      icon: <Loader2 className="animate-spin text-blue-500" />,
     });
 
     try {
@@ -92,40 +94,70 @@ const Login = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-        credentials: "include",
+        credentials: "include", // include cookies
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
-      }
 
       const data = await response.json();
+      console.log("Server response:", response.status, data);
 
-      // Success animation
-      if (formRef.current) {
-        gsap.to(formRef.current, {
-          y: -10,
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut",
+      if (response.status === 201) {
+        // Optional animation on form
+        if (formRef.current) {
+          gsap.to(formRef.current, {
+            y: -10,
+            duration: 0.2,
+            yoyo: true,
+            repeat: 1,
+            ease: "power1.inOut",
+          });
+        }
+
+        // Save auth data locally
+        localStorage.setItem("userData", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+
+        // Update the toast with success
+        toast.update(loadingToastId, {
+          render: data.message || "Login successful! Redirecting...",
+          type: "success",
+          isLoading: false,
+          icon: <CheckCircle className="text-green-500" />,
+          autoClose: 2000,
         });
+
+        // Redirect after a short delay
+        setTimeout(() => router.push("/user/profile"), 100);
+      } else {
+        // Close the loading toast first
+        toast.dismiss(loadingToastId);
+
+        // Create a new error toast
+        toast.error(data.error || "Login failed. Please try again.", {
+          icon: <XCircle className="text-red-500" />,
+          autoClose: 5000,
+        });
+
+        console.error("Login failed:", data.error);
+
+        // Add visual feedback by shaking the form
+        if (formRef.current) {
+          gsap.to(formRef.current, {
+            x: [-10, 10, -10, 10, -5, 5, -2, 2, 0],
+            duration: 0.6,
+            ease: "power2.out",
+          });
+        }
       }
-
-      // Store user data
-      localStorage.setItem("userData", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
-
-      toast.success("Login successful! Redirecting...", {
-        icon: <CheckCircle className="text-green-500" />,
-      });
-
-      setTimeout(() => router.push("/user/profile"), 1500);
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error.message || "An error occurred during login", {
+
+      // Close the loading toast first
+      toast.dismiss(loadingToastId);
+
+      // Create a new error toast
+      toast.error(error.message || "An unexpected error occurred", {
         icon: <XCircle className="text-red-500" />,
+        autoClose: 5000,
       });
     } finally {
       setIsLoading(false);
@@ -138,6 +170,9 @@ const Login = () => {
         darkMode ? "dark bg-gray-900" : "bg-gray-50"
       }`}
     >
+      {/* Use the shared ToastProvider component */}
+      <ToastProvider />
+      
       <div
         ref={formRef}
         className={`w-full max-w-md p-8 rounded-xl shadow-lg transition-colors duration-300 ${
@@ -173,11 +208,10 @@ const Login = () => {
               onChange={handleInputChange}
               required
               disabled={isLoading}
-              className={`w-full p-3 rounded-lg border focus:ring-2 focus:outline-none transition-all ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-600"
-                  : "bg-white border-gray-300 focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-100"
-              }`}
+              className={`w-full p-3 rounded-lg border focus:ring-2 focus:outline-none transition-all ${darkMode
+                ? "bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-600"
+                : "bg-white border-gray-300 focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-100"
+                }`}
               aria-label="Email address"
             />
           </div>
@@ -197,11 +231,10 @@ const Login = () => {
               onChange={handleInputChange}
               required
               disabled={isLoading}
-              className={`w-full p-3 rounded-lg border focus:ring-2 focus:outline-none transition-all ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-600"
-                  : "bg-white border-gray-300 focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-100"
-              }`}
+              className={`w-full p-3 rounded-lg border focus:ring-2 focus:outline-none transition-all ${darkMode
+                ? "bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-600"
+                : "bg-white border-gray-300 focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-100"
+                }`}
               aria-label="Password"
             />
           </div>
@@ -209,13 +242,12 @@ const Login = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-              isLoading
-                ? "bg-gray-400 cursor-not-allowed"
-                : darkMode
+            className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${isLoading
+              ? "bg-gray-400 cursor-not-allowed"
+              : darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"
-            }`}
+              }`}
           >
             {isLoading ? (
               <>
@@ -233,11 +265,10 @@ const Login = () => {
             Don{"'"}t have an account?{" "}
             <button
               onClick={() => router.push("/user/register")}
-              className={`font-medium ${
-                darkMode
-                  ? "text-blue-400 hover:text-blue-300"
-                  : "text-blue-600 hover:text-blue-500"
-              }`}
+              className={`font-medium ${darkMode
+                ? "text-blue-400 hover:text-blue-300"
+                : "text-blue-600 hover:text-blue-500"
+                }`}
             >
               Register here
             </button>

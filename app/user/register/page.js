@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import gsap from "gsap";
 import {
   User,
@@ -15,6 +16,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import ToastProvider from "@/app/components/ToastProvider";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -147,6 +149,8 @@ const Register = () => {
         darkMode ? "dark bg-gray-900" : "bg-gray-50"
       }`}
     >
+      <ToastProvider />
+      
       <div
         ref={formRef}
         className={`w-full max-w-md p-8 rounded-xl shadow-lg transition-colors duration-300 ${
